@@ -52,12 +52,11 @@ namespace PKHeX
                     new { Text = "CHT", Value = 10},
                 };
 
-            var alolatime_list = new[] { new { Text = "Intro Time", Value = 0*60*60 } };
-            Array.Resize(ref alolatime_list, 25);
+            var alolatime_list = new[] { new { Text = "Sun Time", Value = 24*60*60 } };
+            Array.Resize(ref alolatime_list, 24);
             for (int i = 1; i < 24; i++)
                 alolatime_list[i] = new {Text = $"+{i:00} Hours", Value = i*60*60};
             alolatime_list[12] = new {Text = "Moon Time", Value = 12 * 60 * 60};
-            alolatime_list[24] = new {Text = "Sun Time", Value = 24 * 60 * 60};
 
             CB_3DSReg.DisplayMember = "Text";
             CB_3DSReg.ValueMember = "Value";
@@ -94,6 +93,10 @@ namespace PKHeX
             CB_Region.SelectedValue = SAV.SubRegion;
             CB_3DSReg.SelectedValue = SAV.ConsoleRegion;
             CB_Language.SelectedValue = SAV.Language;
+            if (SAV.AlolaTime == 0)
+            {
+                SAV.AlolaTime = 24 * 60 * 60; // Patch up any bad times from previous program versions.
+            }
             CB_AlolaTime.SelectedValue = (int)SAV.AlolaTime;
             
             NUD_M.Value = SAV.M;
@@ -112,8 +115,16 @@ namespace PKHeX
             MT_Minutes.Text = SAV.PlayedMinutes.ToString();
             MT_Seconds.Text = SAV.PlayedSeconds.ToString();
             
-            CAL_LastSavedDate.Value = new DateTime(SAV.LastSavedYear, SAV.LastSavedMonth, SAV.LastSavedDay);
-            CAL_LastSavedTime.Value = new DateTime(2000, 1, 1, SAV.LastSavedHour, SAV.LastSavedMinute, 0);
+            if (SAV.LastSavedDate.HasValue)
+            {
+                CAL_LastSavedDate.Value = SAV.LastSavedDate.Value;
+                CAL_LastSavedTime.Value = SAV.LastSavedDate.Value;
+            }
+            else
+            {
+                L_LastSaved.Visible = CAL_LastSavedDate.Visible = CAL_LastSavedTime.Visible = false;
+            }
+                
             CAL_AdventureStartDate.Value = new DateTime(2000, 1, 1).AddSeconds(SAV.SecondsToStart);
             CAL_AdventureStartTime.Value = new DateTime(2000, 1, 1).AddSeconds(SAV.SecondsToStart % 86400);
             CAL_HoFDate.Value = new DateTime(2000, 1, 1).AddSeconds(SAV.SecondsToFame);
@@ -186,11 +197,8 @@ namespace PKHeX
             fame += (int)(CAL_HoFTime.Value - new DateTime(2000, 1, 1)).TotalSeconds;
             SAV.SecondsToFame = fame;
 
-            SAV.LastSavedYear = CAL_LastSavedDate.Value.Year;
-            SAV.LastSavedMonth = CAL_LastSavedDate.Value.Month;
-            SAV.LastSavedDay = CAL_LastSavedDate.Value.Day;
-            SAV.LastSavedHour = CAL_LastSavedTime.Value.Hour;
-            SAV.LastSavedMinute = CAL_LastSavedTime.Value.Minute;
+            if (SAV.LastSavedDate.HasValue)
+                SAV.LastSavedDate = new DateTime(CAL_LastSavedDate.Value.Year, CAL_LastSavedDate.Value.Month, CAL_LastSavedDate.Value.Day, CAL_LastSavedTime.Value.Hour, CAL_LastSavedTime.Value.Minute, 0);
 
             SAV.BP = (uint)NUD_BP.Value;
             SAV.FestaCoins = (uint)NUD_FC.Value;
